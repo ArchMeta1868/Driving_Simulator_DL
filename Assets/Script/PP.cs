@@ -60,12 +60,12 @@ public class PP : MonoBehaviour
         Vector3 localPoint = transform.InverseTransformPoint(lookAheadPoint);
         float ld = Mathf.Max(localPoint.magnitude, 0.001f);
         float curvature = (2f * localPoint.x) / (ld * ld);
-        float steerAngle = Mathf.Rad2Deg(Mathf.Atan(curvature * wheelBase));
+        float steerAngle = Mathf.Atan(curvature * wheelBase) * Mathf.Rad2Deg;
         float maxSteer = Mathf.Max(1f, carControl.steeringAngle);
         steer = Mathf.Clamp(steerAngle / maxSteer, -1f, 1f);
 
         // 4) Speed calculation similar to CarControlAI
-        float angDeg = Mathf.Abs(Mathf.Rad2Deg(Mathf.Atan2(localPoint.x, localPoint.z)));
+        float angDeg = Mathf.Abs(Mathf.Atan2(localPoint.x, localPoint.z) * Mathf.Rad2Deg);
         float dist = Vector3.Distance(transform.position, target.position);
         float currentSpeed = rb.linearVelocity.magnitude; // m/s
         float facingFactor = Mathf.Clamp01((90f - angDeg) / 90f);
