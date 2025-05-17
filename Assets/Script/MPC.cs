@@ -80,8 +80,8 @@ public class MPC : MonoBehaviour
                 {
                     float delta = s * carControl.steeringAngle * Mathf.Deg2Rad;
                     // simple kinematic bicycle model
-                    p.x += v * Mathf.Cos(h) * predictionDt;
-                    p.z += v * Mathf.Sin(h) * predictionDt;
+                    p.x += v * Mathf.Sin(h) * predictionDt;
+                    p.z += v * Mathf.Cos(h) * predictionDt;
                     h += v / wheelBase * Mathf.Tan(delta) * predictionDt;
                     v += a * carControl.maxSpeed * accelAggression * predictionDt;
                     v = Mathf.Clamp(v, 0f, carControl.maxSpeed);
@@ -95,8 +95,10 @@ public class MPC : MonoBehaviour
                 }
 
                 float distCost = Vector3.Distance(p, tgt);
-                float dirCost = Mathf.Abs(Mathf.DeltaAngle(h * Mathf.Rad2Deg,
-                           Mathf.Atan2(tgt.z - p.z, tgt.x - p.x) * Mathf.Rad2Deg));
+                float dirCost = Mathf.Abs(
+                    Mathf.DeltaAngle(
+                        h * Mathf.Rad2Deg,
+                        Mathf.Atan2(tgt.x - p.x, tgt.z - p.z) * Mathf.Rad2Deg));
                 float cost = distCost + 0.1f * dirCost;
 
                 if (cost < bestCost)
