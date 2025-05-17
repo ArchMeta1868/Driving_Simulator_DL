@@ -224,8 +224,9 @@ public class CarControl : MonoBehaviour
             rb.AddTorque(Vector3.up * -angleDiff * steerAssist * 0.1f, ForceMode.VelocityChange);
         }
 
-        // 11) Speed cap
-        if (currentSpeed * 3.6f > maxSpeed)
+        // 11) Speed cap – 'maxSpeed' is stored in m/s so compare without
+        // converting the current speed to km/h
+        if (currentSpeed > maxSpeed)
         {
             foreach (var w in driveWheels)
             {
