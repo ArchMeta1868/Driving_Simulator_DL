@@ -64,25 +64,32 @@ public class SC : MonoBehaviour
             pathDir = (current.position - transform.position).normalized;
         }
 
-        // Heading error relative to path direction
-        float pathYaw = Mathf.Atan2(pathDir.x, pathDir.z) * Mathf.Rad2Deg;
-        float headingErr = Mathf.DeltaAngle(transform.eulerAngles.y, pathYaw);
-        float headingErrRad = headingErr * Mathf.Deg2Rad;
+        // Vector toward the current waypoint
+        Vector3 toCurrent = current.position - transform.position;
+        float dist = toCurrent.magnitude;
 
-        // Cross track error sign using segment start
-        Vector3 offset = transform.position - current.position;
-        float cross = Vector3.Cross(pathDir, offset).y;
+        // When starting far away, steer directly toward the waypoint
+        bool approachMode = dist > navigator.waypointRadius * 2f;
+        Vector3 goalDir = approachMode ? toCurrent.normalized : pathDir;
+
+        // Heading error
+        float headingErrDeg = Vector3.SignedAngle(transform.forward, goalDir, Vector3.up);
+
+        // Cross track only once we are near the path
+        float cross = 0f;
+        if (!approachMode)
+        {
+            Vector3 offset = transform.position - current.position;
+            cross = Vector3.Cross(pathDir, offset).y;
+        }
 
         // Stanley control law
         float vel = rb.linearVelocity.magnitude + 0.1f; // prevent div by zero
-        float correction = Mathf.Atan2(kStanleyGain * cross, vel);
-        float steerRad = headingErrRad + correction;
-        float steerDeg = steerRad * Mathf.Rad2Deg;
+        float correctionDeg = Mathf.Atan2(kStanleyGain * cross, vel) * Mathf.Rad2Deg;
+        float steerDeg = headingErrDeg + correctionDeg;
         steer = Mathf.Clamp(steerDeg / 45f, -1f, 1f);
 
         // Speed control similar to CarControlAI
-        Vector3 toWp = current.position - transform.position;
-        float dist = toWp.magnitude;
         float facingFactor = Mathf.Clamp01((90f - Mathf.Abs(steerDeg)) / 90f);
         float desiredSpeed = Mathf.Lerp(5f, carControl.maxSpeed, facingFactor)
                              * Mathf.Clamp01(dist / lookAheadDist);
