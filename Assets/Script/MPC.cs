@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(CarControl))]
@@ -24,10 +28,18 @@ public class MPC : MonoBehaviour
     private CarControl carControl;
     private Rigidbody rb;
 
+    private List<float> checkpointTimes = new List<float>();
+    private string logPath;
+
     private void Awake()
     {
         carControl = GetComponent<CarControl>();
         rb = GetComponent<Rigidbody>();
+
+        string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        string logDir = Path.Combine(projectRoot, "script", "log");
+        Directory.CreateDirectory(logDir);
+        logPath = Path.Combine(logDir, GetType().Name + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
     }
 
     private void FixedUpdate()
@@ -38,7 +50,21 @@ public class MPC : MonoBehaviour
             return;
         }
 
+        int prevIndex = navigator.GetCurrentIndex();
         navigator.CheckAndAdvance(transform.position);
+        int curIndex = navigator.GetCurrentIndex();
+        if (curIndex != prevIndex)
+        {
+            checkpointTimes.Add(Time.time);
+            if (curIndex == 0)
+            {
+                using (var w = new StreamWriter(logPath, true))
+                {
+                    w.WriteLine(string.Join(",", checkpointTimes.Select(t => t.ToString("F2"))));
+                }
+                checkpointTimes.Clear();
+            }
+        }
 
         float accelInput, steerInput;
         ComputeMPCInputs(out accelInput, out steerInput);

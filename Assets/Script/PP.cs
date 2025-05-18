@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(CarControl))]
@@ -16,12 +20,20 @@ public class PP : MonoBehaviour
     private CarControl carControl;
     private Rigidbody rb;
 
+    private List<float> checkpointTimes = new List<float>();
+    private string logPath;
+
     private const float wheelBase = 2.5f; // approximate wheel base for pure pursuit
 
     private void Awake()
     {
         carControl = GetComponent<CarControl>();
         rb = GetComponent<Rigidbody>();
+
+        string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        string logDir = Path.Combine(projectRoot, "script", "log");
+        Directory.CreateDirectory(logDir);
+        logPath = Path.Combine(logDir, GetType().Name + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
     }
 
     private void FixedUpdate()
@@ -33,8 +45,21 @@ public class PP : MonoBehaviour
             return;
         }
 
-        // Check if we've reached the current waypoint; if so, advance
+        int prevIndex = navigator.GetCurrentIndex();
         navigator.CheckAndAdvance(transform.position);
+        int curIndex = navigator.GetCurrentIndex();
+        if (curIndex != prevIndex)
+        {
+            checkpointTimes.Add(Time.time);
+            if (curIndex == 0)
+            {
+                using (var w = new StreamWriter(logPath, true))
+                {
+                    w.WriteLine(string.Join(",", checkpointTimes.Select(t => t.ToString("F2"))));
+                }
+                checkpointTimes.Clear();
+            }
+        }
 
         // Compute the inputs (accel and steer) using the current waypoint
         float accelInput, steerInput;
